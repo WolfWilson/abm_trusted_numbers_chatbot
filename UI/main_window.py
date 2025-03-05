@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QGridLayout
+    QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem
 )
 from Modules.conexion_db import buscar_por_dni
 from Modules.styles import STYLE_MAIN_WINDOW
@@ -8,8 +8,7 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("ABM Números de Confianza")
-        self.setGeometry(100, 100, 500, 300)
-
+        self.setGeometry(100, 100, 700, 400)
         self.setStyleSheet(STYLE_MAIN_WINDOW)
 
         layout = QVBoxLayout()
@@ -23,29 +22,20 @@ class MainWindow(QWidget):
         layout.addWidget(self.input_dni)
         layout.addWidget(self.btn_buscar)
 
-        # Grid para mostrar resultados
-        self.grid_layout = QGridLayout()
-        layout.addLayout(self.grid_layout)
+        # Tabla para mostrar los resultados
+        self.table = QTableWidget()
+        self.table.setColumnCount(6)  # Número de columnas
+        self.table.setHorizontalHeaderLabels([
+            "CUIL", "Teléfono", "Principal", "Notificación", "Activo", "Tipo Benef."
+        ])
+        self.table.setColumnWidth(0, 130)
+        self.table.setColumnWidth(1, 150)
+        self.table.setColumnWidth(2, 90)
+        self.table.setColumnWidth(3, 90)
+        self.table.setColumnWidth(4, 70)
+        self.table.setColumnWidth(5, 110)
 
-        # Etiquetas de datos (inicialmente vacías)
-        self.labels = {
-            "Nro_jub": QLabel("Número de Jubilación: "),
-            "CUIL": QLabel("CUIL: "),
-            "Nro_doc": QLabel("DNI: "),
-            "Nombre": QLabel("Nombre: "),
-            "Activo": QLabel("Activo: "),
-            "Tipo_Benef": QLabel("Tipo de Beneficio: "),
-            "telchatbot": QLabel("Teléfono: "),
-            "principal": QLabel("Principal: "),
-            "notificacion": QLabel("Notificación: "),
-        }
-
-        # Agregar etiquetas al grid layout
-        row = 0
-        for key, label in self.labels.items():
-            self.grid_layout.addWidget(QLabel(f"{label.text()}"), row, 0)
-            self.grid_layout.addWidget(label, row, 1)
-            row += 1
+        layout.addWidget(self.table)
 
         self.btn_buscar.clicked.connect(self.buscar_dni)
 
@@ -55,21 +45,25 @@ class MainWindow(QWidget):
         dni = self.input_dni.text().strip()
         if dni.isdigit():
             resultado = buscar_por_dni(int(dni))
-            if resultado:
-                datos = resultado[0]  # Tomar el primer resultado
-                for key, value in datos.items():
-                    if key in self.labels:
-                        self.labels[key].setText(str(value))  # Actualizar texto de etiquetas
-            else:
-                self.limpiar_labels("No se encontraron datos.")
+            self.mostrar_resultados(resultado)
         else:
-            self.limpiar_labels("Ingrese un DNI válido.")
+            self.mostrar_resultados([])
 
-    def limpiar_labels(self, mensaje=""):
-        """ Limpia las etiquetas o muestra un mensaje de error """
-        for key in self.labels:
-            self.labels[key].setText(mensaje)
+    def mostrar_resultados(self, resultados):
+        """ Muestra los resultados en la tabla """
+        self.table.setRowCount(len(resultados))
 
+        for row, data in enumerate(resultados):
+            self.table.setItem(row, 0, QTableWidgetItem(str(data["CUIL"])))
+            self.table.setItem(row, 1, QTableWidgetItem(str(data["telefono"])))  # Teléfono dinámico
+            self.table.setItem(row, 2, QTableWidgetItem("Sí" if data["principal"] else "No"))
+            self.table.setItem(row, 3, QTableWidgetItem("Sí" if data["notificacion"] else "No"))
+            self.table.setItem(row, 4, QTableWidgetItem(str(data["Activo"])))
+            self.table.setItem(row, 5, QTableWidgetItem(str(data["Tipo_Benef"])))
+
+        if not resultados:
+            self.table.setRowCount(1)
+            self.table.setItem(0, 0, QTableWidgetItem("No hay datos"))
 
 if __name__ == "__main__":
     app = QApplication([])
