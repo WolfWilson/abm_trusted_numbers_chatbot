@@ -1,24 +1,132 @@
 STYLE_MAIN_WINDOW = """
+    /* Fondo general de la ventana */
     QWidget {
-        background-color: #F0F0F0;
+        background-color: #F6F6F6;
         font-family: Arial, sans-serif;
         font-size: 14px;
     }
-    
-    QLineEdit {
-        border: 1px solid #A0A0A0;
-        padding: 5px;
-        border-radius: 5px;
+
+    /* Labels en negrita para #labelDni y #labelAgregar */
+    QLabel#labelDni, 
+    QLabel#labelAgregar {
+        font-weight: bold;
     }
     
+    /* Campos de texto */
+    QLineEdit {
+        border: 1px solid #AAAAAA;
+        padding: 6px;
+        border-radius: 4px;
+        background-color: #FFFFFF;
+    }
+    QLineEdit:focus {
+        border: 1px solid #0078D7; /* Resalta el borde al hacer focus */
+        background-color: #FAFAFA;
+    }
+
+    /* Botones normales */
     QPushButton {
         background-color: #0078D7;
         color: white;
-        border-radius: 5px;
-        padding: 5px;
+        border-radius: 4px;
+        padding: 6px 10px;
+        font-weight: bold;
     }
-    
     QPushButton:hover {
         background-color: #005A9E;
+    }
+    QPushButton:pressed {
+        background-color: #003E73;
+    }
+
+    /* Botones tipo ToolButton (usados para íconos de Editar, Eliminar, etc.) */
+    QToolButton {
+        background-color: transparent;
+        border: none;
+        margin: 0px 3px;
+    }
+    QToolButton:hover {
+        background-color: #E0E0E0;
+        border-radius: 4px;
+    }
+
+    /* ComboBox */
+    QComboBox {
+        border: 1px solid #AAAAAA;
+        border-radius: 4px;
+        padding: 4px;
+        background-color: #FFFFFF;
+    }
+    QComboBox:focus {
+        border: 1px solid #0078D7;
+    }
+    QComboBox::drop-down {
+        subcontrol-origin: padding;
+        subcontrol-position: top right;
+        width: 25px;
+        border-left: 0px solid darkgray;
+    }
+
+    /* Tabla */
+    QTableWidget {
+        background-color: #FFFFFF;
+        gridline-color: #DDDDDD;
+        selection-background-color: #B5D5FF; /* Color al seleccionar una fila */
+        selection-color: #000000;
+    }
+
+    /* Encabezados de la tabla */
+    QHeaderView::section {
+        background-color: #EAEAEA;
+        padding: 4px;
+        border: 1px solid #CCCCCC;
+        font-weight: bold;
+    }
+
+    /* ===== ScrollBars redondeados y modernos ===== */
+    /* ScrollBar vertical */
+    QScrollBar:vertical {
+        border: none;
+        background-color: #E0E0E0;
+        width: 10px;
+        margin: 0px 0px 0px 0px;
+        border-radius: 5px;
+    }
+    QScrollBar::handle:vertical {
+        background-color: #AAAAAA;
+        min-height: 30px;
+        border-radius: 5px;
+    }
+    QScrollBar::handle:vertical:hover {
+        background-color: #999999;
+    }
+    QScrollBar::add-line:vertical,
+    QScrollBar::sub-line:vertical {
+        background: none;
+        border: none;
+        height: 0px;
+    }
+
+    /* ScrollBar horizontal */
+    QScrollBar:horizontal {
+        border: none;
+        background-color: #E0E0E0;
+        height: 10px;
+        margin: 0px 0px 0px 0px;
+        border-radius: 5px;
+    }
+    QScrollBar::handle:horizontal {
+        background-color: #AAAAAA;
+        min-width: 30px;
+        border-radius: 5px;
+    }
+    QScrollBar::handle:horizontal:hover {
+        background-color: #999999;
+    }
+    QScrollBar::add-line:horizontal,
+    QScrollBar::sub-line:horizontal {
+        background: none;
+        border: none;
+        width: 0px;
     }
 """
