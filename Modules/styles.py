@@ -6,10 +6,33 @@ STYLE_MAIN_WINDOW = """
         font-size: 14px;
     }
 
-    /* Labels en negrita para #labelDni y #labelAgregar */
-    QLabel#labelDni, 
-    QLabel#labelAgregar {
+    /* "Ingrese DNI" en color negro */
+    QLabel#labelDni {
+        background-color: transparent;
+        color: black;  /* 🔹 Fuente en negro */
         font-weight: bold;
+    }
+
+    /* "Agregar Nuevo Número", "Principal" y "Notificación" en color blanco */
+    QLabel#labelAgregar,
+    QLabel#labelPrincipal,
+    QLabel#labelNotificacion {
+        background-color: transparent;
+        color: white;  /* 🔹 Fuente en blanco */
+        font-weight: bold;  /* 🔹 Negrita */
+    }
+
+    /* 
+     * Labels transparentes para que no muestren fondo blanco, 
+     * útil cuando tienes imagen de fondo en la ventana. 
+     * Si quieres que TODOS los QLabel sean transparentes, 
+     * usa "QLabel { background-color: transparent; }".
+    */
+    QLabel#labelDni,
+    QLabel#labelAgregar,
+    QLabel#labelPrincipal,
+    QLabel#labelNotificacion {
+        background-color: transparent;
     }
     
     /* Campos de texto */
@@ -39,7 +62,7 @@ STYLE_MAIN_WINDOW = """
         background-color: #003E73;
     }
 
-    /* Botones tipo ToolButton (usados para íconos de Editar, Eliminar, etc.) */
+    /* Botones tipo ToolButton (íconos de Editar, Eliminar, Agregar, etc.) */
     QToolButton {
         background-color: transparent;
         border: none;
