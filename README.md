@@ -1,4 +1,4 @@
-# abm_trusted_numbers_chatbot# 📲 ABM Números de Confianza - INSSSEP Chatbot  
+# 📲 ABM Números de Confianza - INSSSEP Chatbot  
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python)
 ![PyQt6](https://img.shields.io/badge/PyQt6-GUI-green?style=for-the-badge&logo=qt)
