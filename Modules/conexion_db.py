@@ -7,7 +7,8 @@ def get_connection():
         '{SQL Server Native Client 11.0}'
     ]
     
-    server = 'SQL01'
+ # server = 'SQL01'
+    server = 'PC-2193' # SERVER PARA PRUEBAS
     database = 'Gestion'
 
     for driver in drivers:
@@ -31,7 +32,7 @@ def buscar_por_dni(dni):
     cursor = conn.cursor()
     
     try:
-        query = "EXEC Gestion.dbo.Will_obtener_datos_chatbot_cred @Nro_doc = ?"
+        query = "EXEC Gestion.dbo.Will_obtener_datos_chatbot_cred_test @Nro_doc = ?"
         cursor.execute(query, (dni,))
         columnas = [column[0] for column in cursor.description]  # Obtener nombres de columnas
         resultados = cursor.fetchall()
