@@ -1,3 +1,5 @@
+# UI/main_window.py
+
 import os
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget, 
@@ -5,11 +7,13 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QGuiApplication, QIcon, QPixmap, QPalette, QBrush
 from PyQt6.QtCore import QSize, Qt
+
 from Modules.conexion_db import buscar_por_dni
 from Modules.styles import STYLE_MAIN_WINDOW
+# Importamos nuestro módulo para insertar números
+from Modules import add_number
 
 def cargar_icono(nombre):
-    """ Carga un icono desde la carpeta 'assets' """
     ruta_base = os.path.abspath(os.path.dirname(__file__))
     ruta_icono = os.path.join(ruta_base, "..", "assets", nombre)
     return QIcon(ruta_icono)
@@ -18,23 +22,26 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("ABM Números de Confianza")
-        self.setFixedSize(1000, 600)  # Tamaño de la ventana
+        self.setFixedSize(1000, 600)  
         self.centrar_ventana()
 
-        # ⬛ Icono de la ventana: phone.png
+        # Icono de la ventana
         self.setWindowIcon(cargar_icono("phone.png"))
 
-        # ⬛ Estilos
+        # Estilos
         self.setStyleSheet(STYLE_MAIN_WINDOW)
 
-        # ⬛ Aplicar fondo de pantalla a la ventana
+        # Fondo de pantalla (opcional)
         self.aplicar_fondo_ventana()
+
+        # Variable para almacenar el CUIL actual
+        self.current_cuil = None
 
         layout = QVBoxLayout()
 
-        # Label y entrada para DNI
+        # Zona de búsqueda
         self.label_dni = QLabel("Ingrese DNI:")
-        self.label_dni.setObjectName("labelDni")  # Para negrita por stylesheet
+        self.label_dni.setObjectName("labelDni")
         self.input_dni = QLineEdit()
         self.btn_buscar = QPushButton("Buscar")
 
@@ -42,10 +49,9 @@ class MainWindow(QWidget):
         layout.addWidget(self.input_dni)
         layout.addWidget(self.btn_buscar)
 
-        # Tabla de resultados
+        # Tabla
         self.table = QTableWidget()
         self.table.setColumnCount(9)
-        # Aquí cambiamos la cabecera: "referencia" en lugar de "CUIL"
         self.table.setHorizontalHeaderLabels([
             "Nombre", "Referencia", "Teléfono", "Principal", 
             "Notificación", "Estado", "Beneficio", "Editar", "Eliminar"
@@ -57,9 +63,8 @@ class MainWindow(QWidget):
         self.label_agregar.setObjectName("labelAgregar")
         layout.addWidget(self.label_agregar)
 
-        # Sección con inputs para un nuevo número
+        # Sección para agregar un nuevo número
         form_layout = QHBoxLayout()
-
         self.input_pais = QLineEdit()
         self.input_pais.setPlaceholderText("Cód. País")
         self.input_area = QLineEdit()
@@ -70,14 +75,14 @@ class MainWindow(QWidget):
         self.input_referencia.setPlaceholderText("Referencia (Máx 50)")
 
         self.label_principal = QLabel("Principal:")
-        self.label_principal.setObjectName("labelPrincipal")  # 🔹 Asignar nombre para el QSS
+        self.label_principal.setObjectName("labelPrincipal")
 
         self.label_notificacion = QLabel("Notificación:")
-        self.label_notificacion.setObjectName("labelNotificacion")  # 🔹 Asignar nombre para el QSS
-
+        self.label_notificacion.setObjectName("labelNotificacion")
 
         self.combo_principal = QComboBox()
         self.combo_principal.addItems(["Sí", "No"])
+
         self.combo_notificacion = QComboBox()
         self.combo_notificacion.addItems(["Sí", "No"])
 
@@ -88,7 +93,7 @@ class MainWindow(QWidget):
         self.btn_agregar.setIconSize(QSize(60, 60))
         self.btn_agregar.setFixedSize(80, 50)
 
-        # Armar el layout
+        # Armado del layout
         form_layout.addWidget(self.input_pais)
         form_layout.addWidget(self.input_area)
         form_layout.addWidget(self.input_numero)
@@ -105,17 +110,13 @@ class MainWindow(QWidget):
 
         layout.addLayout(form_layout)
 
-        # Conexión del botón Buscar
+        # Conexiones
         self.btn_buscar.clicked.connect(self.buscar_dni)
+        self.btn_agregar.clicked.connect(self.on_agregar_numero)
 
         self.setLayout(layout)
 
     def aplicar_fondo_ventana(self):
-        """
-        Si existe 'bg.png' en assets, se usa como fondo de la ventana
-        y se escala al tamaño de la misma. Caso contrario, no hace nada
-        (fondo por defecto).
-        """
         ruta_base = os.path.abspath(os.path.dirname(__file__))
         ruta_imagen = os.path.join(ruta_base, "..", "assets", "bg.png")
 
@@ -126,7 +127,6 @@ class MainWindow(QWidget):
                 Qt.TransformationMode.SmoothTransformation
             )
             paleta = self.palette()
-            # Usamos QPalette.Window para el fondo de la ventana
             paleta.setBrush(self.backgroundRole(), QBrush(pixmap))
             self.setPalette(paleta)
             self.setAutoFillBackground(True)
@@ -134,9 +134,6 @@ class MainWindow(QWidget):
             print("⚠ No se encontró 'bg.png'. Se usará el fondo de estilo por defecto.")
 
     def resizeEvent(self, event):
-        """
-        Si la ventana se redimensiona, volvemos a escalar el fondo.
-        """
         super().resizeEvent(event)
         self.aplicar_fondo_ventana()
 
@@ -151,12 +148,16 @@ class MainWindow(QWidget):
     def mostrar_resultados(self, resultados):
         """
         Muestra: [Nombre, referencia, telefono, principal, notificación, estado, beneficio].
+        Guarda el primer CUIL encontrado en self.current_cuil.
         """
         self.table.setRowCount(len(resultados))
+        self.current_cuil = None  # Limpiamos el CUIL anterior
 
         for row, data in enumerate(resultados):
-            # "Referencia" en lugar de "CUIL"
-            # data["referencia"] => en la posición 1
+            # Guardar el primer CUIL
+            if row == 0:
+                self.current_cuil = data.get("CUIL")
+
             self.table.setItem(row, 0, QTableWidgetItem(str(data.get("Nombre", ""))))
             self.table.setItem(row, 1, QTableWidgetItem(str(data.get("referencia", ""))))
             self.table.setItem(row, 2, QTableWidgetItem(str(data.get("telefono", ""))))
@@ -165,9 +166,11 @@ class MainWindow(QWidget):
 
             activo = "Activo" if data.get("Activo", 1) == 0 else "Inactivo"
             self.table.setItem(row, 5, QTableWidgetItem(activo))
-            self.table.setItem(row, 6, QTableWidgetItem(self.get_tipo_beneficio(data.get("Tipo_Benef", -1))))
 
-            # Botones Editar / Eliminar
+            # 'Tipo_Benef' ya viene como texto, ej. 'Jubilación / Pensión'
+            self.table.setItem(row, 6, QTableWidgetItem(str(data.get("Tipo_Benef", ""))))
+
+            # Botones Editar / Eliminar (proximamente)
             btn_editar = QToolButton()
             btn_editar.setIcon(cargar_icono("edit1.png"))
             btn_editar.setIconSize(QSize(30, 30))
@@ -183,21 +186,64 @@ class MainWindow(QWidget):
             self.table.setCellWidget(row, 7, btn_editar)
             self.table.setCellWidget(row, 8, btn_eliminar)
 
-        # Ajustar tabla a su contenido
         self.table.resizeColumnsToContents()
         self.table.resizeRowsToContents()
 
-    def get_tipo_beneficio(self, tipo):
-        tipos = {
-            0: "Haberes Impagos",
-            1: "Pensión",
-            2: "Jubilación",
-            3: "Ley 5496",
-            4: "Ley 5495",
-            5: "Ex Combatiente de Malvinas",
-            6: "Movilizados de Malvinas"
-        }
-        return tipos.get(tipo, "Desconocido")
+    def on_agregar_numero(self):
+        """
+        1) Mensaje de confirmación antes de insertar
+        2) Insertar con add_number.agregar_numero_confianza
+        3) Refrescar la búsqueda
+        4) Limpiar campos
+        """
+        if not self.current_cuil:
+            QMessageBox.warning(self, "Error", "No hay CUIL seleccionado. Realice una búsqueda primero.")
+            return
+
+        pais = self.input_pais.text().strip()
+        area = self.input_area.text().strip()
+        abonado = self.input_numero.text().strip()
+        referencia = self.input_referencia.text().strip()
+        principal = 1 if self.combo_principal.currentText() == "Sí" else 0
+        notificacion = 1 if self.combo_notificacion.currentText() == "Sí" else 0
+
+        if not pais or not area or not abonado:
+            QMessageBox.warning(self, "Datos incompletos", "Complete país, área y número.")
+            return
+
+        # 1) Mensaje de confirmación
+        confirm_msg = f"¿Está seguro que desea agregar el número:\n" \
+                      f"{pais} {area} {abonado}\n" \
+                      f"para este beneficiario?"
+        reply = QMessageBox.question(self, "Confirmar Alta", confirm_msg,
+                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.No:
+            return  # No inserta
+
+        # 2) Insertar
+        resultado = add_number.agregar_numero_confianza(
+            cuil=self.current_cuil,
+            pais=pais,
+            area=area,
+            abonado=abonado,
+            referencia=referencia,
+            principal=principal,
+            notificacion=notificacion
+        )
+
+        # 3) Refrescar la búsqueda (usamos el mismo DNI)
+        self.buscar_dni()
+
+        # 4) Limpiar campos
+        self.input_pais.clear()
+        self.input_area.clear()
+        self.input_numero.clear()
+        self.input_referencia.clear()
+        self.combo_principal.setCurrentIndex(0)
+        self.combo_notificacion.setCurrentIndex(0)
+
+        # Mostrar mensaje final
+        QMessageBox.information(self, "Agregar Número", resultado)
 
     def confirmar_accion(self, accion, row):
         mensaje = f"¿Está seguro que desea {accion.lower()} este número?"
@@ -205,6 +251,7 @@ class MainWindow(QWidget):
                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if reply == QMessageBox.StandardButton.Yes:
             print(f"{accion} número en fila {row}")
+            # Aquí iría la lógica de edición/eliminación
 
     def centrar_ventana(self):
         pantalla = QGuiApplication.primaryScreen().availableGeometry()
