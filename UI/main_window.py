@@ -84,7 +84,7 @@ class MainWindow(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
 
         # Ajustar anchos
-        self.table.setColumnWidth(1, 160)  # Nombre
+        self.table.setColumnWidth(1, 180)  # Nombre
         self.table.setColumnWidth(2, 200)  # Referencia
         self.table.setColumnWidth(3, 130)  # Teléfono
         self.table.setColumnWidth(4, 80)   # Principal
@@ -185,12 +185,25 @@ class MainWindow(QWidget):
         self.aplicar_fondo_ventana()
 
     def buscar_dni(self):
+        """
+        Busca beneficiarios por DNI. Si no hay resultados, muestra una alerta.
+        """
         dni = self.input_dni.text().strip()
-        if dni.isdigit():
-            resultado = buscar_por_dni(int(dni))
-            self.mostrar_resultados(resultado)
-        else:
-            self.mostrar_resultados([])
+
+        if not dni.isdigit():
+            QMessageBox.warning(self, "Error", "El DNI ingresado no es válido. Debe contener solo números.")
+            return
+
+        resultado = buscar_por_dni(int(dni))
+
+        if not resultado:
+            # 🛑 Si no hay resultados, mostrar alerta
+            QMessageBox.information(self, "Sin resultados", "No se encontraron datos para el DNI ingresado.")
+            self.mostrar_resultados([])  # Limpiar tabla
+            return
+
+        self.mostrar_resultados(resultado)
+
 
     def mostrar_resultados(self, resultados):
         self.table.setRowCount(len(resultados))
