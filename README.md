@@ -15,19 +15,24 @@ Este proyecto permite la **búsqueda, visualización, edición y eliminación** 
 ✔ **Búsqueda por DNI**: Obtención de datos de beneficiarios activos.  
 ✔ **Visualización de números de confianza** en una tabla organizada.  
 ✔ **Carga de nuevos números** con detalles como código de país, área, referencia y preferencias de notificación.  
-✔ **Edición y eliminación de números de confianza** *(Próximamente)*.  
+✔ **Eliminación de números de confianza con confirmación previa.**  
+✔ **Generación de comprobantes en PDF** con formato horizontal y datos estructurados.  
 ✔ **Interfaz moderna y responsiva**, con iconos y estilos optimizados.  
-✔ **Integración con el chatbot del INSSSEP** para gestionar accesos a recibos digitales.  
+✔ **Integración con el chatbot del INSSSEP** para gestionar accesos a recibos digitales. 
 
 ---
 
 ## 📷 **Capturas**
 
 ### 🖥️ **Interfaz del Programa**
-![Captura de la Aplicación](ruta/a/captura1.png)
+![Captura de la Aplicación]
+[![imagen-2025-03-10-122950068.png](https://i.postimg.cc/QMXvwtyy/imagen-2025-03-10-122950068.png)](https://postimg.cc/fVrH0wZc)
 
 ### 🤖 **Opción en el Chatbot**
 ![Chatbot INSSSEP](ruta/a/captura2.png)
+
+### 📄 **Generación de Comprobante PDF**
+![Comprobante PDF](ruta/a/comprobante.png)
 
 
 ## 🔧 **Tecnologías Utilizadas**
@@ -64,6 +69,40 @@ python main.py
 
 ```
 
+## 📂 Estructura del Proyecto
+```sh
+📂 abm_numeros_confianza/
+│
+├── 📂 assets/                 # Archivos de recursos (íconos, imágenes, estilos)
+│   ├── bg.png                 # Imagen de fondo de la aplicación
+│   ├── phone.png              # Ícono principal de la aplicación
+│   ├── add1.png               # Ícono para agregar números
+│   ├── delete1.png            # Ícono para eliminar números
+│   ├── print.png              # Ícono para generar comprobantes PDF
+│
+├── 📂 Modules/                # Módulos principales del proyecto
+│   ├── __init__.py            # Archivo de inicialización del paquete
+│   ├── conexion_db.py         # Módulo para la conexión con SQL Server
+│   ├── add_number.py          # Módulo para insertar nuevos números de confianza
+│   ├── delete_number.py       # Módulo para eliminar números de confianza
+│   ├── generate_pdf.py        # Módulo para la generación de comprobantes PDF
+│   ├── styles.py              # Archivo de estilos (QSS) para la interfaz
+│
+├── 📂 UI/                     # Interfaz gráfica
+│   ├── main_window.py         # Ventana principal del programa
+│
+├── 📂 output/                 # Carpeta para almacenar los PDFs generados
+│   ├── comprobante_numeros.pdf # Último comprobante generado
+│
+├── .gitignore                 # Archivo para ignorar archivos innecesarios en Git
+├── README.md                  # Documentación del proyecto
+├── requirements.txt           # Dependencias del proyecto
+├── main.py                    # Archivo principal para ejecutar la aplicación
+│
+└── venv/                      # Entorno virtual de Python (no incluido en Git)
+
+```
+
 ## 🔗 **Conexión con la Base de Datos**
 
 El sistema se conecta a Microsoft SQL Server con autenticación de Windows, accediendo a las bases:
@@ -71,12 +110,10 @@ El sistema se conecta a Microsoft SQL Server con autenticación de Windows, acce
 Gestion (Servidor: SQL01) → Procedimientos almacenados.
 DSP (Servidor: SQL01) → Datos de beneficiarios.
 
-## 🚧 Próximas Funcionalidades
-🔜 Edición de números de confianza para actualizar datos.
-🔜 Eliminación de números con confirmación previa.
-🔜 Historial de modificaciones para control de cambios.
+## 🚧 **Funcionalidades en Desarrollo**
+🔜 Historial de modificaciones para control de cambios. (Auditoría)
 🔜 Más opciones de integración con el chatbot de INSSSEP.
 
-📄 Licencia
+## 📄 Licencia
 Este proyecto es de uso interno para INSSSEP y no está disponible para distribución pública.
 
