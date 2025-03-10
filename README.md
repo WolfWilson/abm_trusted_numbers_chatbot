@@ -29,11 +29,12 @@ Este proyecto permite la **búsqueda, visualización, edición y eliminación** 
 [![imagen-2025-03-10-122950068.png](https://i.postimg.cc/QMXvwtyy/imagen-2025-03-10-122950068.png)](https://postimg.cc/fVrH0wZc)
 
 ### 🤖 **Opción en el Chatbot**
-![Chatbot INSSSEP](ruta/a/captura2.png)
+![Chatbot INSSSEP]
+[![b5d47fc7-4305-4e7e-af7f-9377540abd0a.jpg](https://i.postimg.cc/6qdDFvtF/b5d47fc7-4305-4e7e-af7f-9377540abd0a.jpg)](https://postimg.cc/zHGtg3Lk)
 
 ### 📄 **Generación de Comprobante PDF**
-![Comprobante PDF](ruta/a/comprobante.png)
-
+![Comprobante PDF]
+[![imagen-2025-03-10-123817150.png](https://i.postimg.cc/43qqd53r/imagen-2025-03-10-123817150.png)](https://postimg.cc/WDmXY0gn)
 
 ## 🔧 **Tecnologías Utilizadas**
 - ![Python](https://img.shields.io/badge/Python-3.12-blue?style=flat-square&logo=python) **Python 3.12**
