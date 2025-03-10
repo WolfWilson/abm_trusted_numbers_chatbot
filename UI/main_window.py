@@ -1,21 +1,50 @@
 import os
+import sys
+import subprocess
+import platform
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget, 
+    QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget,
     QTableWidgetItem, QHBoxLayout, QComboBox, QToolButton, QMessageBox, QHeaderView
 )
 from PyQt6.QtGui import QGuiApplication, QIcon, QPixmap, QPalette, QBrush
 from PyQt6.QtCore import QSize, Qt
 
+# Módulos del proyecto
 from Modules.conexion_db import buscar_por_dni
 from Modules.styles import STYLE_MAIN_WINDOW
 from Modules import add_number
 from Modules import delete_number
-from Modules import edit_number  # <-- Importamos el nuevo módulo para editar
+
+# Para generar el PDF (ReportLab).
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import cm
+
+# ====== Import reportlab (platypus) para tablas con multiline ======
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+
+
 
 def cargar_icono(nombre):
     ruta_base = os.path.abspath(os.path.dirname(__file__))
     ruta_icono = os.path.join(ruta_base, "..", "assets", nombre)
     return QIcon(ruta_icono)
+
+
+def abrir_pdf(pdf_path):
+    """
+    Abre el archivo PDF con el visor predeterminado del sistema.
+    """
+    if platform.system() == 'Windows':
+        os.startfile(pdf_path)  # type: ignore
+    elif platform.system() == 'Darwin':  # macOS
+        subprocess.run(['open', pdf_path])
+    else:  # Linux / otros
+        subprocess.run(['xdg-open', pdf_path])
+
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -24,22 +53,17 @@ class MainWindow(QWidget):
         self.setFixedSize(1020, 500)
         self.centrar_ventana()
 
-        # Icono y estilos
         self.setWindowIcon(cargar_icono("phone.png"))
         self.setStyleSheet(STYLE_MAIN_WINDOW)
         self.aplicar_fondo_ventana()
 
-        # Variable para almacenar el CUIL actual tras la búsqueda
         self.current_cuil = None
-        # Variables para modo edición
-        self.edit_mode = False
-        self.edit_idcel = None
 
         layout = QVBoxLayout()
 
-        # Zona de búsqueda
+        # ========== Sección Búsqueda ==========
         self.label_dni = QLabel("Ingrese DNI:")
-        self.label_dni.setObjectName("labelDni")
+        self.label_dni.setObjectName("labelDni")  # Para transparencia (styles.py)
         self.input_dni = QLineEdit()
         self.btn_buscar = QPushButton("Buscar")
 
@@ -47,38 +71,34 @@ class MainWindow(QWidget):
         layout.addWidget(self.input_dni)
         layout.addWidget(self.btn_buscar)
 
-        # Tabla
+        # ========== Tabla ==========
         self.table = QTableWidget()
-        self.table.setColumnCount(10)
+        self.table.setColumnCount(9)
         self.table.setHorizontalHeaderLabels([
-            "idcelular (oculto)", "Nombre", "Referencia", "Teléfono", 
-            "Principal", "Notificación", "Estado", "Beneficio", 
-            "Editar", "Eliminar"
+            "idcelular (oculto)", "Nombre", "Referencia", "Teléfono",
+            "Principal", "Notificación", "Estado", "Beneficio", "Eliminar"
         ])
-        self.table.setColumnHidden(0, True)  # Ocultamos el idcelular
+        self.table.setColumnHidden(0, True)  # Ocultamos col idcel
 
-        # Dos líneas máximo
         self.table.setWordWrap(True)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
 
-        # Anchos fijos
+        # Ajustar anchos
         self.table.setColumnWidth(1, 160)  # Nombre
-        self.table.setColumnWidth(2, 160)  # Referencia
+        self.table.setColumnWidth(2, 200)  # Referencia
         self.table.setColumnWidth(3, 130)  # Teléfono
         self.table.setColumnWidth(4, 80)   # Principal
         self.table.setColumnWidth(5, 100)  # Notificación
         self.table.setColumnWidth(6, 80)   # Estado
         self.table.setColumnWidth(7, 120)  # Beneficio
-        self.table.setColumnWidth(8, 70)   # Editar
-        self.table.setColumnWidth(9, 70)   # Eliminar
+        self.table.setColumnWidth(8, 70)   # Eliminar
 
         self.table.verticalHeader().setDefaultSectionSize(40)
-
         layout.addWidget(self.table)
 
-        # Sección "Agregar Nuevo Número" (o editar)
+        # ========== Sección Agregar Número ==========
         self.label_agregar = QLabel("Agregar Nuevo Número")
-        self.label_agregar.setObjectName("labelAgregar")
+        self.label_agregar.setObjectName("labelAgregar")  # Para transparencia
         layout.addWidget(self.label_agregar)
 
         form_layout = QHBoxLayout()
@@ -91,9 +111,9 @@ class MainWindow(QWidget):
         self.input_referencia = QLineEdit()
         self.input_referencia.setPlaceholderText("Referencia (Máx 50)")
 
+        # Labels con objectName para transparencia
         self.label_principal = QLabel("Principal:")
         self.label_principal.setObjectName("labelPrincipal")
-
         self.label_notificacion = QLabel("Notificación:")
         self.label_notificacion.setObjectName("labelNotificacion")
 
@@ -103,6 +123,7 @@ class MainWindow(QWidget):
         self.combo_notificacion = QComboBox()
         self.combo_notificacion.addItems(["Sí", "No"])
 
+        # Botón "Agregar"
         self.btn_agregar = QToolButton()
         self.btn_agregar.setIcon(cargar_icono("add1.png"))
         self.btn_agregar.setToolTip("Agregar nuevo número")
@@ -114,20 +135,32 @@ class MainWindow(QWidget):
         form_layout.addWidget(self.input_numero)
         form_layout.addWidget(self.input_referencia)
 
-        opciones_layout = QVBoxLayout()
-        opciones_layout.addWidget(self.label_principal)
-        opciones_layout.addWidget(self.combo_principal)
-        opciones_layout.addWidget(self.label_notificacion)
-        opciones_layout.addWidget(self.combo_notificacion)
+        sub_layout = QVBoxLayout()
+        sub_layout.addWidget(self.label_principal)
+        sub_layout.addWidget(self.combo_principal)
+        sub_layout.addWidget(self.label_notificacion)
+        sub_layout.addWidget(self.combo_notificacion)
+        form_layout.addLayout(sub_layout)
 
-        form_layout.addLayout(opciones_layout)
-        form_layout.addWidget(self.btn_agregar)
+        # Layout vertical para el botón Add y el botón Print
+        buttons_layout = QVBoxLayout()
+        buttons_layout.addWidget(self.btn_agregar)
 
+        # Nuevo botón "Comprobante" para PDF
+        self.btn_comprobante = QToolButton()
+        self.btn_comprobante.setIcon(cargar_icono("print.png"))
+        self.btn_comprobante.setToolTip("Generar comprobante PDF")
+        self.btn_comprobante.setIconSize(QSize(60, 60))
+        self.btn_comprobante.setFixedSize(80, 50)
+        self.btn_comprobante.clicked.connect(self.on_generar_comprobante)
+        buttons_layout.addWidget(self.btn_comprobante)
+
+        form_layout.addLayout(buttons_layout)
         layout.addLayout(form_layout)
 
         # Conexiones
         self.btn_buscar.clicked.connect(self.buscar_dni)
-        self.btn_agregar.clicked.connect(self.on_agregar_o_editar)
+        self.btn_agregar.clicked.connect(self.on_agregar_numero)
 
         self.setLayout(layout)
 
@@ -152,11 +185,6 @@ class MainWindow(QWidget):
         self.aplicar_fondo_ventana()
 
     def buscar_dni(self):
-        self.edit_mode = False
-        self.edit_idcel = None
-        self.label_agregar.setText("Agregar Nuevo Número")
-        self.btn_agregar.setToolTip("Agregar nuevo número")
-
         dni = self.input_dni.text().strip()
         if dni.isdigit():
             resultado = buscar_por_dni(int(dni))
@@ -191,35 +219,50 @@ class MainWindow(QWidget):
             self.table.setItem(row, 5, QTableWidgetItem(notif_text))
 
             activo_val = data.get("Activo", 1)
-            activo_text = "Activo" if activo_val == 0 else "Inactivo"
-            self.table.setItem(row, 6, QTableWidgetItem(activo_text))
+            estado_text = "Activo" if activo_val == 0 else "Inactivo"
+            self.table.setItem(row, 6, QTableWidgetItem(estado_text))
 
             benef_text = str(data.get("Tipo_Benef", ""))
             self.table.setItem(row, 7, QTableWidgetItem(benef_text))
-
-            # Botón Editar
-            btn_editar = QToolButton()
-            btn_editar.setIcon(cargar_icono("edit1.png"))
-            btn_editar.setIconSize(QSize(30, 30))
-            btn_editar.setToolTip("Editar número")
-            btn_editar.clicked.connect(lambda _, r=row: self.confirmar_accion("Editar", r))
 
             # Botón Eliminar
             btn_eliminar = QToolButton()
             btn_eliminar.setIcon(cargar_icono("delete1.png"))
             btn_eliminar.setIconSize(QSize(30, 30))
             btn_eliminar.setToolTip("Eliminar número")
-            btn_eliminar.clicked.connect(lambda _, r=row: self.confirmar_accion("Eliminar", r))
+            btn_eliminar.clicked.connect(lambda _, r=row: self.confirmar_eliminar(r))
+            self.table.setCellWidget(row, 8, btn_eliminar)
 
-            self.table.setCellWidget(row, 8, btn_editar)
-            self.table.setCellWidget(row, 9, btn_eliminar)
+    def confirmar_eliminar(self, row):
+        mensaje = "¿Está seguro que desea eliminar este número?"
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Eliminar Número")
+        msg_box.setText(mensaje)
+        msg_box.setIcon(QMessageBox.Icon.Question)
+        btn_si = msg_box.addButton("Sí", QMessageBox.ButtonRole.YesRole)
+        btn_no = msg_box.addButton("No", QMessageBox.ButtonRole.NoRole)
+        msg_box.exec()
 
-    def on_agregar_o_editar(self):
-        """
-        Si estamos en modo edicion (self.edit_mode=True), se edita
-        caso contrario, se agrega.
-        """
-        if not self.current_cuil and not self.edit_mode:
+        if msg_box.clickedButton() == btn_no:
+            return
+
+        idcel_item = self.table.item(row, 0)
+        if not idcel_item:
+            QMessageBox.warning(self, "Error", "No se encontró idcelular en la tabla.")
+            return
+
+        idcel_str = idcel_item.text()
+        if not idcel_str.isdigit():
+            QMessageBox.warning(self, "Error", "idcelular no es válido.")
+            return
+
+        idcel = int(idcel_str)
+        resultado = delete_number.eliminar_numero_confianza(idcel)
+        QMessageBox.information(self, "Eliminar Número", resultado)
+        self.buscar_dni()
+
+    def on_agregar_numero(self):
+        if not self.current_cuil:
             QMessageBox.warning(self, "Error", "No hay CUIL seleccionado. Realice una búsqueda primero.")
             return
 
@@ -234,71 +277,30 @@ class MainWindow(QWidget):
             QMessageBox.warning(self, "Datos incompletos", "Complete país, área y número.")
             return
 
-        if not self.edit_mode:
-            # Modo Agregar
-            confirm_msg = f"¿Está seguro que desea agregar el número:\n" \
-                          f"{pais} {area} {abonado}\n" \
-                          f"para este beneficiario?"
-            msg_box = QMessageBox(self)
-            msg_box.setWindowTitle("Confirmar Alta")
-            msg_box.setText(confirm_msg)
-            msg_box.setIcon(QMessageBox.Icon.Question)
-            btn_si = msg_box.addButton("Sí", QMessageBox.ButtonRole.YesRole)
-            btn_no = msg_box.addButton("No", QMessageBox.ButtonRole.NoRole)
-            msg_box.exec()
+        confirm_msg = f"¿Está seguro que desea agregar el número:\n" \
+                      f"{pais} {area} {abonado}\n" \
+                      f"para este beneficiario?"
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Confirmar Alta")
+        msg_box.setText(confirm_msg)
+        msg_box.setIcon(QMessageBox.Icon.Question)
+        btn_si = msg_box.addButton("Sí", QMessageBox.ButtonRole.YesRole)
+        btn_no = msg_box.addButton("No", QMessageBox.ButtonRole.NoRole)
+        msg_box.exec()
 
-            if msg_box.clickedButton() == btn_no:
-                return
+        if msg_box.clickedButton() == btn_no:
+            return
 
-            # Insertar
-            resultado = add_number.agregar_numero_confianza(
-                cuil=self.current_cuil,
-                pais=pais,
-                area=area,
-                abonado=abonado,
-                referencia=referencia,
-                principal=principal,
-                notificacion=notificacion
-            )
-            QMessageBox.information(self, "Agregar Número", resultado)
-        else:
-            # Modo Editar
-            if not self.edit_idcel:
-                QMessageBox.warning(self, "Error", "No se encontró el ID del número a editar.")
-                return
-
-            confirm_msg = f"¿Está seguro que desea editar el número:\n" \
-                          f"{pais} {area} {abonado}\n" \
-                          f"Referencia: {referencia}"
-            msg_box = QMessageBox(self)
-            msg_box.setWindowTitle("Confirmar Edición")
-            msg_box.setText(confirm_msg)
-            msg_box.setIcon(QMessageBox.Icon.Question)
-            btn_si = msg_box.addButton("Sí", QMessageBox.ButtonRole.YesRole)
-            btn_no = msg_box.addButton("No", QMessageBox.ButtonRole.NoRole)
-            msg_box.exec()
-
-            if msg_box.clickedButton() == btn_no:
-                return
-
-            # Editar
-            from Modules import edit_number
-            resultado = edit_number.editar_numero_confianza(
-                idcelular=self.edit_idcel,
-                pais=pais,
-                area=area,
-                abonado=abonado,
-                referencia=referencia,
-                principal=principal,
-                notificacion=notificacion
-            )
-            QMessageBox.information(self, "Editar Número", resultado)
-
-            # Restaurar modo
-            self.edit_mode = False
-            self.edit_idcel = None
-            self.label_agregar.setText("Agregar Nuevo Número")
-            self.btn_agregar.setToolTip("Agregar nuevo número")
+        resultado = add_number.agregar_numero_confianza(
+            cuil=self.current_cuil,
+            pais=pais,
+            area=area,
+            abonado=abonado,
+            referencia=referencia,
+            principal=principal,
+            notificacion=notificacion
+        )
+        QMessageBox.information(self, "Agregar Número", resultado)
 
         # Limpiar
         self.input_pais.clear()
@@ -310,95 +312,96 @@ class MainWindow(QWidget):
 
         self.buscar_dni()
 
-    def confirmar_accion(self, accion, row):
+    def on_generar_comprobante(self):
         """
-        Para "Editar", cargamos los datos en el formulario y pasamos a modo edicion.
-        Para "Eliminar", llamamos a delete.
+        Generar PDF (landscape) con la tabla + disclaimer.
         """
-        if accion == "Eliminar":
-            mensaje = f"¿Está seguro que desea eliminar este número?"
-            msg_box = QMessageBox(self)
-            msg_box.setWindowTitle(f"{accion} Número")
-            msg_box.setText(mensaje)
-            msg_box.setIcon(QMessageBox.Icon.Question)
-            btn_si = msg_box.addButton("Sí", QMessageBox.ButtonRole.YesRole)
-            btn_no = msg_box.addButton("No", QMessageBox.ButtonRole.NoRole)
-            msg_box.exec()
+        # 1) Recopilar datos de la tabla
+        row_count = self.table.rowCount()
+        headers = ["Nombre", "Referencia", "Teléfono",
+                   "Principal", "Notificación", "Estado", "Beneficio"]
+        data_rows = []
+        for r in range(row_count):
+            nombre = self.table.item(r, 1).text() if self.table.item(r, 1) else ""
+            ref = self.table.item(r, 2).text() if self.table.item(r, 2) else ""
+            tel = self.table.item(r, 3).text() if self.table.item(r, 3) else ""
+            prin = self.table.item(r, 4).text() if self.table.item(r, 4) else ""
+            notif = self.table.item(r, 5).text() if self.table.item(r, 5) else ""
+            estado = self.table.item(r, 6).text() if self.table.item(r, 6) else ""
+            benef = self.table.item(r, 7).text() if self.table.item(r, 7) else ""
 
-            if msg_box.clickedButton() == btn_no:
-                return
+            data_rows.append([nombre, ref, tel, prin, notif, estado, benef])
 
-            idcel_item = self.table.item(row, 0)
-            if not idcel_item:
-                QMessageBox.warning(self, "Error", "No se encontró idcelular en la tabla.")
-                return
+        # 2) Definir estilo e iniciar doc en horizontal (landscape)
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib import colors
 
-            idcel_str = idcel_item.text()
-            if not idcel_str.isdigit():
-                QMessageBox.warning(self, "Error", "idcelular no es válido.")
-                return
+        pdf_path = os.path.join(os.getcwd(), "comprobante_numeros.pdf")
+        doc = SimpleDocTemplate(pdf_path, pagesize=landscape(A4),
+                                rightMargin=2*cm, leftMargin=2*cm,
+                                topMargin=2*cm, bottomMargin=2*cm)
 
-            idcel = int(idcel_str)
-            resultado = delete_number.eliminar_numero_confianza(idcel)
-            QMessageBox.information(self, "Eliminar Número", resultado)
-            self.buscar_dni()
-        elif accion == "Editar":
-            # 1) Tomar idcelular
-            idcel_item = self.table.item(row, 0)
-            if not idcel_item:
-                QMessageBox.warning(self, "Error", "No se encontró idcelular.")
-                return
+        styles = getSampleStyleSheet()
+        story = []
 
-            idcel_str = idcel_item.text()
-            if not idcel_str.isdigit():
-                QMessageBox.warning(self, "Error", "idcelular inválido.")
-                return
+        # 3) Título con Paragraph (para multiline si hace falta)
+        title_style = styles['Title']
+        title_style.fontSize = 18
+        title_style.leading = 22
 
-            self.edit_idcel = int(idcel_str)
+        title_paragraph = Paragraph("Comprobante de Números de Confianza", title_style)
+        story.append(title_paragraph)
+        story.append(Spacer(1, 0.5*cm))
 
-            # 2) Cargar datos de la fila en el formulario
-            nombre_item = self.table.item(row, 1)
-            referencia_item = self.table.item(row, 2)
-            tel_item = self.table.item(row, 3)
-            principal_item = self.table.item(row, 4)
-            notif_item = self.table.item(row, 5)
+        # 4) Construir data para la tabla. Primero la fila de headers
+        table_data = [headers]
+        table_data.extend(data_rows)
 
-            # Asumimos que la tabla no guarda por separado el pais, area y abonado, 
-            # sino "Teléfono" completo. Tocaría parsear "54 362 4219426" si quisieras. 
-            # En este ejemplo, supondremos que el usuario rellena manualmente o 
-            # que la DB devolvía pais, area, abonado separadamente en celdas. 
+        # 5) Crear la tabla (cada celda es string)
+        # colWidths define anchos para que no se superpongan
+        tbl = Table(table_data, colWidths=[6*cm, 6*cm, 5*cm, 2*cm, 3*cm, 3*cm, 4*cm])
 
-            # Si tu SP realmente devuelve 'pais','area','abonado' en columns, 
-            # asigna: 
-            # self.input_pais.setText(self.table.item(row, X).text()) 
-            # etc.
+        # 6) Aplicar estilos
+        tbl_style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),   # Encabezado gris
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey)
+        ])
+        tbl.setStyle(tbl_style)
 
-            # De momento, supondremos que "Teléfono" no se parsea.
+        # 7) Agregar la tabla al story
+        story.append(tbl)
+        story.append(Spacer(1, 1*cm))
 
-            self.input_referencia.setText(referencia_item.text())
+        # 8) Disclaimer
+        disclaimer_paragraph = Paragraph(
+            "Nota: Este comprobante es solo informativo. <br/>"
+            "Todos los derechos reservados. Will@INSSSEP 2025.",
+            styles['Normal']
+        )
+        story.append(disclaimer_paragraph)
 
-            # Principal
-            if principal_item.text() == "Sí":
-                self.combo_principal.setCurrentText("Sí")
-            else:
-                self.combo_principal.setCurrentText("No")
+        # 9) Construir el PDF
+        doc.build(story)
 
-            # Notificacion
-            if notif_item.text() == "Sí":
-                self.combo_notificacion.setCurrentText("Sí")
-            else:
-                self.combo_notificacion.setCurrentText("No")
+        # 10) Abrir PDF
+        abrir_pdf(pdf_path)
+        QMessageBox.information(self, "Comprobante", f"Se generó el PDF (landscape):\n{pdf_path}")
 
-            # 3) Modo edicion activado
-            self.edit_mode = True
-            self.label_agregar.setText("Editar Número")
-            self.btn_agregar.setToolTip("Guardar cambios del número")
 
     def centrar_ventana(self):
         pantalla = QGuiApplication.primaryScreen().availableGeometry()
         ventana = self.frameGeometry()
         ventana.moveCenter(pantalla.center())
         self.move(ventana.topLeft())
+
 
 if __name__ == "__main__":
     app = QApplication([])
