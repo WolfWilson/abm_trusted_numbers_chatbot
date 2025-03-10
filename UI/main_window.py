@@ -10,6 +10,7 @@ from Modules.conexion_db import buscar_por_dni
 from Modules.styles import STYLE_MAIN_WINDOW
 from Modules import add_number
 from Modules import delete_number
+from Modules import edit_number  # <-- Importamos el nuevo módulo para editar
 
 def cargar_icono(nombre):
     ruta_base = os.path.abspath(os.path.dirname(__file__))
@@ -30,6 +31,9 @@ class MainWindow(QWidget):
 
         # Variable para almacenar el CUIL actual tras la búsqueda
         self.current_cuil = None
+        # Variables para modo edición
+        self.edit_mode = False
+        self.edit_idcel = None
 
         layout = QVBoxLayout()
 
@@ -53,13 +57,11 @@ class MainWindow(QWidget):
         ])
         self.table.setColumnHidden(0, True)  # Ocultamos el idcelular
 
-        # Permitir dos líneas máximo si el texto es largo
+        # Dos líneas máximo
         self.table.setWordWrap(True)
-        # No redimensionar automáticamente. 
-        # El usuario puede arrastrar si quiere.
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
 
-        # Anchos fijos iniciales para cada columna (ajusta a tu gusto)
+        # Anchos fijos
         self.table.setColumnWidth(1, 160)  # Nombre
         self.table.setColumnWidth(2, 160)  # Referencia
         self.table.setColumnWidth(3, 130)  # Teléfono
@@ -70,12 +72,11 @@ class MainWindow(QWidget):
         self.table.setColumnWidth(8, 70)   # Editar
         self.table.setColumnWidth(9, 70)   # Eliminar
 
-        # Forzar altura fija de cada fila (~ 2 líneas)
         self.table.verticalHeader().setDefaultSectionSize(40)
 
         layout.addWidget(self.table)
 
-        # Sección "Agregar Nuevo Número"
+        # Sección "Agregar Nuevo Número" (o editar)
         self.label_agregar = QLabel("Agregar Nuevo Número")
         self.label_agregar.setObjectName("labelAgregar")
         layout.addWidget(self.label_agregar)
@@ -105,7 +106,7 @@ class MainWindow(QWidget):
         self.btn_agregar = QToolButton()
         self.btn_agregar.setIcon(cargar_icono("add1.png"))
         self.btn_agregar.setToolTip("Agregar nuevo número")
-        self.btn_agregar.setIconSize(QSize(60, 60))
+        self.btn_agregar.setIconSize(QSize(80, 80))
         self.btn_agregar.setFixedSize(80, 50)
 
         form_layout.addWidget(self.input_pais)
@@ -126,7 +127,7 @@ class MainWindow(QWidget):
 
         # Conexiones
         self.btn_buscar.clicked.connect(self.buscar_dni)
-        self.btn_agregar.clicked.connect(self.on_agregar_numero)
+        self.btn_agregar.clicked.connect(self.on_agregar_o_editar)
 
         self.setLayout(layout)
 
@@ -151,6 +152,11 @@ class MainWindow(QWidget):
         self.aplicar_fondo_ventana()
 
     def buscar_dni(self):
+        self.edit_mode = False
+        self.edit_idcel = None
+        self.label_agregar.setText("Agregar Nuevo Número")
+        self.btn_agregar.setToolTip("Agregar nuevo número")
+
         dni = self.input_dni.text().strip()
         if dni.isdigit():
             resultado = buscar_por_dni(int(dni))
@@ -159,18 +165,6 @@ class MainWindow(QWidget):
             self.mostrar_resultados([])
 
     def mostrar_resultados(self, resultados):
-        """
-        col0 -> idcelular
-        col1 -> Nombre (2 líneas máximo, luego recorta)
-        col2 -> Referencia
-        col3 -> Telefono
-        col4 -> Principal
-        col5 -> Notificación
-        col6 -> Estado
-        col7 -> Beneficio
-        col8 -> Editar
-        col9 -> Eliminar
-        """
         self.table.setRowCount(len(resultados))
         self.current_cuil = None
 
@@ -179,41 +173,29 @@ class MainWindow(QWidget):
                 self.current_cuil = data.get("CUIL", None)
 
             idcel = data.get("idcelular", "")
-            item_id = QTableWidgetItem(str(idcel))
-            self.table.setItem(row, 0, item_id)
+            self.table.setItem(row, 0, QTableWidgetItem(str(idcel)))
 
-            # Nombre
             nombre_text = str(data.get("Nombre", ""))
-            item_nombre = QTableWidgetItem(nombre_text)
-            # Tooltip para ver todo el texto
-            item_nombre.setToolTip(nombre_text)
-            # Se recortará a 2 líneas por la altura fija de 40 px
-            self.table.setItem(row, 1, item_nombre)
+            self.table.setItem(row, 1, QTableWidgetItem(nombre_text))
 
-            # Referencia
             referencia_text = str(data.get("referencia", ""))
-            item_ref = QTableWidgetItem(referencia_text)
-            item_ref.setToolTip(referencia_text)
-            self.table.setItem(row, 2, item_ref)
+            self.table.setItem(row, 2, QTableWidgetItem(referencia_text))
 
-            # Teléfono
-            self.table.setItem(row, 3, QTableWidgetItem(str(data.get("telefono", ""))))
+            telefono_text = str(data.get("telefono", ""))
+            self.table.setItem(row, 3, QTableWidgetItem(telefono_text))
 
-            # Principal
             principal_text = "Sí" if data.get("principal", 0) else "No"
             self.table.setItem(row, 4, QTableWidgetItem(principal_text))
 
-            # Notificación
             notif_text = "Sí" if data.get("notificacion", 0) else "No"
             self.table.setItem(row, 5, QTableWidgetItem(notif_text))
 
-            # Estado
             activo_val = data.get("Activo", 1)
             activo_text = "Activo" if activo_val == 0 else "Inactivo"
             self.table.setItem(row, 6, QTableWidgetItem(activo_text))
 
-            # Beneficio
-            self.table.setItem(row, 7, QTableWidgetItem(str(data.get("Tipo_Benef", ""))))
+            benef_text = str(data.get("Tipo_Benef", ""))
+            self.table.setItem(row, 7, QTableWidgetItem(benef_text))
 
             # Botón Editar
             btn_editar = QToolButton()
@@ -232,11 +214,12 @@ class MainWindow(QWidget):
             self.table.setCellWidget(row, 8, btn_editar)
             self.table.setCellWidget(row, 9, btn_eliminar)
 
-        # No llamamos a "resizeColumnsToContents" ni "resizeRowsToContents"
-        # para mantener anchos y alturas fijos.
-
-    def on_agregar_numero(self):
-        if not self.current_cuil:
+    def on_agregar_o_editar(self):
+        """
+        Si estamos en modo edicion (self.edit_mode=True), se edita
+        caso contrario, se agrega.
+        """
+        if not self.current_cuil and not self.edit_mode:
             QMessageBox.warning(self, "Error", "No hay CUIL seleccionado. Realice una búsqueda primero.")
             return
 
@@ -251,32 +234,71 @@ class MainWindow(QWidget):
             QMessageBox.warning(self, "Datos incompletos", "Complete país, área y número.")
             return
 
-        # Confirmación
-        confirm_msg = f"¿Está seguro que desea agregar el número:\n" \
-                      f"{pais} {area} {abonado}\n" \
-                      f"para este beneficiario?"
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle("Confirmar Alta")
-        msg_box.setText(confirm_msg)
-        msg_box.setIcon(QMessageBox.Icon.Question)
-        btn_si = msg_box.addButton("Sí", QMessageBox.ButtonRole.YesRole)
-        btn_no = msg_box.addButton("No", QMessageBox.ButtonRole.NoRole)
-        msg_box.exec()
+        if not self.edit_mode:
+            # Modo Agregar
+            confirm_msg = f"¿Está seguro que desea agregar el número:\n" \
+                          f"{pais} {area} {abonado}\n" \
+                          f"para este beneficiario?"
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Confirmar Alta")
+            msg_box.setText(confirm_msg)
+            msg_box.setIcon(QMessageBox.Icon.Question)
+            btn_si = msg_box.addButton("Sí", QMessageBox.ButtonRole.YesRole)
+            btn_no = msg_box.addButton("No", QMessageBox.ButtonRole.NoRole)
+            msg_box.exec()
 
-        if msg_box.clickedButton() == btn_no:
-            return
+            if msg_box.clickedButton() == btn_no:
+                return
 
-        resultado = add_number.agregar_numero_confianza(
-            cuil=self.current_cuil,
-            pais=pais,
-            area=area,
-            abonado=abonado,
-            referencia=referencia,
-            principal=principal,
-            notificacion=notificacion
-        )
+            # Insertar
+            resultado = add_number.agregar_numero_confianza(
+                cuil=self.current_cuil,
+                pais=pais,
+                area=area,
+                abonado=abonado,
+                referencia=referencia,
+                principal=principal,
+                notificacion=notificacion
+            )
+            QMessageBox.information(self, "Agregar Número", resultado)
+        else:
+            # Modo Editar
+            if not self.edit_idcel:
+                QMessageBox.warning(self, "Error", "No se encontró el ID del número a editar.")
+                return
 
-        self.buscar_dni()
+            confirm_msg = f"¿Está seguro que desea editar el número:\n" \
+                          f"{pais} {area} {abonado}\n" \
+                          f"Referencia: {referencia}"
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Confirmar Edición")
+            msg_box.setText(confirm_msg)
+            msg_box.setIcon(QMessageBox.Icon.Question)
+            btn_si = msg_box.addButton("Sí", QMessageBox.ButtonRole.YesRole)
+            btn_no = msg_box.addButton("No", QMessageBox.ButtonRole.NoRole)
+            msg_box.exec()
+
+            if msg_box.clickedButton() == btn_no:
+                return
+
+            # Editar
+            from Modules import edit_number
+            resultado = edit_number.editar_numero_confianza(
+                idcelular=self.edit_idcel,
+                pais=pais,
+                area=area,
+                abonado=abonado,
+                referencia=referencia,
+                principal=principal,
+                notificacion=notificacion
+            )
+            QMessageBox.information(self, "Editar Número", resultado)
+
+            # Restaurar modo
+            self.edit_mode = False
+            self.edit_idcel = None
+            self.label_agregar.setText("Agregar Nuevo Número")
+            self.btn_agregar.setToolTip("Agregar nuevo número")
 
         # Limpiar
         self.input_pais.clear()
@@ -286,22 +308,26 @@ class MainWindow(QWidget):
         self.combo_principal.setCurrentIndex(0)
         self.combo_notificacion.setCurrentIndex(0)
 
-        QMessageBox.information(self, "Agregar Número", resultado)
+        self.buscar_dni()
 
     def confirmar_accion(self, accion, row):
-        mensaje = f"¿Está seguro que desea {accion.lower()} este número?"
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle(f"{accion} Número")
-        msg_box.setText(mensaje)
-        msg_box.setIcon(QMessageBox.Icon.Question)
-        btn_si = msg_box.addButton("Sí", QMessageBox.ButtonRole.YesRole)
-        btn_no = msg_box.addButton("No", QMessageBox.ButtonRole.NoRole)
-        msg_box.exec()
-
-        if msg_box.clickedButton() == btn_no:
-            return
-
+        """
+        Para "Editar", cargamos los datos en el formulario y pasamos a modo edicion.
+        Para "Eliminar", llamamos a delete.
+        """
         if accion == "Eliminar":
+            mensaje = f"¿Está seguro que desea eliminar este número?"
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle(f"{accion} Número")
+            msg_box.setText(mensaje)
+            msg_box.setIcon(QMessageBox.Icon.Question)
+            btn_si = msg_box.addButton("Sí", QMessageBox.ButtonRole.YesRole)
+            btn_no = msg_box.addButton("No", QMessageBox.ButtonRole.NoRole)
+            msg_box.exec()
+
+            if msg_box.clickedButton() == btn_no:
+                return
+
             idcel_item = self.table.item(row, 0)
             if not idcel_item:
                 QMessageBox.warning(self, "Error", "No se encontró idcelular en la tabla.")
@@ -317,7 +343,56 @@ class MainWindow(QWidget):
             QMessageBox.information(self, "Eliminar Número", resultado)
             self.buscar_dni()
         elif accion == "Editar":
-            QMessageBox.information(self, "Editar", "Función editar en desarrollo...")
+            # 1) Tomar idcelular
+            idcel_item = self.table.item(row, 0)
+            if not idcel_item:
+                QMessageBox.warning(self, "Error", "No se encontró idcelular.")
+                return
+
+            idcel_str = idcel_item.text()
+            if not idcel_str.isdigit():
+                QMessageBox.warning(self, "Error", "idcelular inválido.")
+                return
+
+            self.edit_idcel = int(idcel_str)
+
+            # 2) Cargar datos de la fila en el formulario
+            nombre_item = self.table.item(row, 1)
+            referencia_item = self.table.item(row, 2)
+            tel_item = self.table.item(row, 3)
+            principal_item = self.table.item(row, 4)
+            notif_item = self.table.item(row, 5)
+
+            # Asumimos que la tabla no guarda por separado el pais, area y abonado, 
+            # sino "Teléfono" completo. Tocaría parsear "54 362 4219426" si quisieras. 
+            # En este ejemplo, supondremos que el usuario rellena manualmente o 
+            # que la DB devolvía pais, area, abonado separadamente en celdas. 
+
+            # Si tu SP realmente devuelve 'pais','area','abonado' en columns, 
+            # asigna: 
+            # self.input_pais.setText(self.table.item(row, X).text()) 
+            # etc.
+
+            # De momento, supondremos que "Teléfono" no se parsea.
+
+            self.input_referencia.setText(referencia_item.text())
+
+            # Principal
+            if principal_item.text() == "Sí":
+                self.combo_principal.setCurrentText("Sí")
+            else:
+                self.combo_principal.setCurrentText("No")
+
+            # Notificacion
+            if notif_item.text() == "Sí":
+                self.combo_notificacion.setCurrentText("Sí")
+            else:
+                self.combo_notificacion.setCurrentText("No")
+
+            # 3) Modo edicion activado
+            self.edit_mode = True
+            self.label_agregar.setText("Editar Número")
+            self.btn_agregar.setToolTip("Guardar cambios del número")
 
     def centrar_ventana(self):
         pantalla = QGuiApplication.primaryScreen().availableGeometry()
