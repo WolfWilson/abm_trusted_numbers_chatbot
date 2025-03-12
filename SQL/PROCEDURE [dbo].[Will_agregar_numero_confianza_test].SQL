@@ -1,13 +1,12 @@
 USE [Gestion]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Will_agregar_numero_confianza_test]    Script Date: 12/03/2025 09:36:03 ******/
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE PROCEDURE [dbo].[Will_agregar_numero_confianza_test]
+ALTER PROCEDURE [dbo].[Will_agregar_numero_confianza_test]
     @Cuil BIGINT,          -- CUIL del beneficiario
     @Pais VARCHAR(5),      -- Código de país
     @Area VARCHAR(5),      -- Código de área
@@ -20,7 +19,7 @@ BEGIN
     SET NOCOUNT ON;
 
     -- Verifica si el CUIL ya tiene el mismo número registrado
-    IF EXISTS (SELECT 1 FROM Credenciales.dbo.celular_confianza WHERE cuil = @Cuil AND pais = @Pais AND area = @Area AND abonado = @Abonado)
+    IF EXISTS (SELECT 1 FROM Principal.Credenciales.dbo.celular_confianza WHERE cuil = @Cuil AND pais = @Pais AND area = @Area AND abonado = @Abonado)
     BEGIN
         PRINT 'El número ya está registrado para este CUIL.';
         RETURN;
@@ -35,7 +34,6 @@ BEGIN
 
     PRINT 'Número agregado correctamente.';
 END;
-GO
 
 /*
 Ejemplo de ejecución:

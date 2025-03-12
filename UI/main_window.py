@@ -26,14 +26,18 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, 
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 
+from PyQt6.QtWidgets import QApplication, QMessageBox
+import sys
+import getpass
+from Modules.conexion_db import verificar_permiso
 
-
+# Funciones auxiliares
 def cargar_icono(nombre):
     ruta_base = os.path.abspath(os.path.dirname(__file__))
     ruta_icono = os.path.join(ruta_base, "..", "assets", nombre)
     return QIcon(ruta_icono)
 
-
+    
 def abrir_pdf(pdf_path):
     """
     Abre el archivo PDF con el visor predeterminado del sistema.
@@ -416,8 +420,11 @@ class MainWindow(QWidget):
         self.move(ventana.topLeft())
 
 
+# Verifica permisos antes de abrir la aplicación
 if __name__ == "__main__":
     app = QApplication([])
+    from main_window import MainWindow  # Importar la ventana principal solo si tiene acceso
     window = MainWindow()
     window.show()
     app.exec()
+
