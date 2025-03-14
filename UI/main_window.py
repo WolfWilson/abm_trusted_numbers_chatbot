@@ -202,7 +202,7 @@ class MainWindow(QWidget):
 
         if not resultado:
             # 🛑 Si no hay resultados, mostrar alerta
-            QMessageBox.information(self, "Sin resultados", "No se encontraron datos para el DNI ingresado.")
+            QMessageBox.information(self, "Sin resultados", "No se encontraron datos para el DNI ingresado o no es JUBILADO/PENSIONADO")
             self.mostrar_resultados([])  # Limpiar tabla
             return
 

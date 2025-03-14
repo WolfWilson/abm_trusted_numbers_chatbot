@@ -1,18 +1,13 @@
-# Modules/add_number.py
-
-import pyodbc
 from Modules.conexion_db import get_connection
 
 def agregar_numero_confianza(cuil, pais, area, abonado, referencia, principal, notificacion):
-    """
-    Llama al procedimiento 'Will_agregar_numero_confianza_test'
-    para insertar un nuevo número de confianza.
-    """
-    conn = get_connection()
+    # Conecta a servidor=Principal, base=Credenciales
+    conn = get_connection(server="Principal", database="Credenciales")
     cursor = conn.cursor()
     try:
+        # Ojo: Si el SP está en schema dbo, la llamada es:
         cursor.execute("""
-            EXEC Will_agregar_numero_confianza_test 
+            EXEC dbo.Will_agregar_numero_confianza_test
                 @Cuil=?,
                 @Pais=?,
                 @Area=?,
@@ -22,12 +17,9 @@ def agregar_numero_confianza(cuil, pais, area, abonado, referencia, principal, n
                 @Notificacion=?
         """, (cuil, pais, area, abonado, referencia, principal, notificacion))
         conn.commit()
-
-        # No se está leyendo la salida PRINT del SP, 
-        # pero podríamos capturar con cursor.messages si quisiéramos.
-        return "Número agregado correctamente."
+        return "✅ Número agregado correctamente."
     except Exception as e:
-        return f"Error al agregar número: {e}"
+        return f"❌ Error al agregar número: {e}"
     finally:
         cursor.close()
         conn.close()
