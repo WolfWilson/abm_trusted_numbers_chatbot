@@ -479,9 +479,6 @@ class MainWindow(QWidget):
         QMessageBox.information(self, "Comprobante", f"Se generó el comprobante:\n{pdf_path}")
 
 
-
-
-
     def centrar_ventana(self):
         pantalla = QGuiApplication.primaryScreen().availableGeometry()
         ventana = self.frameGeometry()

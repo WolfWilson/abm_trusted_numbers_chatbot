@@ -12,7 +12,7 @@ def eliminar_numero_confianza(idcelular):
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            EXEC Principal.dbo.Will_eliminar_numero_confianza_test
+            EXEC Will_eliminar_numero_confianza_test
                 @idcelular=?
         """, (idcelular,))
         conn.commit()
