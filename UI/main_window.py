@@ -331,86 +331,155 @@ class MainWindow(QWidget):
 
     def on_generar_comprobante(self):
         """
-        Generar PDF (landscape) con la tabla + disclaimer.
+        Genera un PDF en hoja vertical (A4) con word-wrap real en la tabla,
+        fecha y firma alineadas a la derecha, y texto principal justificado.
         """
-        # 1) Recopilar datos de la tabla
-        row_count = self.table.rowCount()
-        headers = ["Nombre", "Referencia", "Teléfono",
-                   "Principal", "Notificación", "Estado", "Beneficio"]
-        data_rows = []
-        for r in range(row_count):
-            nombre = self.table.item(r, 1).text() if self.table.item(r, 1) else ""
-            ref = self.table.item(r, 2).text() if self.table.item(r, 2) else ""
-            tel = self.table.item(r, 3).text() if self.table.item(r, 3) else ""
-            prin = self.table.item(r, 4).text() if self.table.item(r, 4) else ""
-            notif = self.table.item(r, 5).text() if self.table.item(r, 5) else ""
-            estado = self.table.item(r, 6).text() if self.table.item(r, 6) else ""
-            benef = self.table.item(r, 7).text() if self.table.item(r, 7) else ""
-
-            data_rows.append([nombre, ref, tel, prin, notif, estado, benef])
-
-        # 2) Definir estilo e iniciar doc en horizontal (landscape)
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
-        from reportlab.lib.styles import getSampleStyleSheet
+        import os
+        from datetime import datetime
+        from reportlab.platypus import (SimpleDocTemplate, Paragraph, Table,
+                                        TableStyle, Spacer)
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.units import cm
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.enums import TA_JUSTIFY, TA_RIGHT
         from reportlab.lib import colors
 
-        pdf_path = os.path.join(os.getcwd(), "comprobante_numeros.pdf")
-        doc = SimpleDocTemplate(pdf_path, pagesize=landscape(A4),
-                                rightMargin=2*cm, leftMargin=2*cm,
-                                topMargin=2*cm, bottomMargin=2*cm)
+        # 1) Obtener datos de la tabla (GUI)
+        row_count = self.table.rowCount()
+        headers = ["Nombre", "Referencia", "Teléfono",
+                "Principal", "Notificación", "Estado", "Beneficio"]
+        data_rows = []
 
+        # Creamos un estilo de celda para word-wrap
         styles = getSampleStyleSheet()
+        cell_style = ParagraphStyle(
+            'CellStyle',
+            parent=styles['Normal'],
+            fontSize=8,
+            leading=10,
+            alignment=TA_JUSTIFY  # Justificado en la celda
+        )
+
+        for r in range(row_count):
+            nombre = self.table.item(r, 1).text() if self.table.item(r, 1) else ""
+            ref    = self.table.item(r, 2).text() if self.table.item(r, 2) else ""
+            tel    = self.table.item(r, 3).text() if self.table.item(r, 3) else ""
+            prin   = self.table.item(r, 4).text() if self.table.item(r, 4) else ""
+            notif  = self.table.item(r, 5).text() if self.table.item(r, 5) else ""
+            estado = self.table.item(r, 6).text() if self.table.item(r, 6) else ""
+            benef  = self.table.item(r, 7).text() if self.table.item(r, 7) else ""
+
+            # Convertimos cada texto en un Paragraph para que se ajuste (word-wrap).
+            nombre_p = Paragraph(nombre, cell_style)
+            ref_p    = Paragraph(ref, cell_style)
+            tel_p    = Paragraph(tel, cell_style)
+            prin_p   = Paragraph(prin, cell_style)
+            notif_p  = Paragraph(notif, cell_style)
+            estado_p = Paragraph(estado, cell_style)
+            benef_p  = Paragraph(benef, cell_style)
+
+            data_rows.append([nombre_p, ref_p, tel_p, prin_p, notif_p, estado_p, benef_p])
+
+        # 2) Configurar el PDF en Vertical (A4)
+        # Obtener la ruta de la carpeta Descargas del usuario
+        download_folder = os.path.join(os.path.expanduser("~"), "Downloads")
+
+        # Definir el nombre y la ruta completa del PDF
+        pdf_path = os.path.join(download_folder, "comprobante_numeros.pdf")
+        doc = SimpleDocTemplate(
+            pdf_path,
+            pagesize=A4,
+            rightMargin=2*cm,
+            leftMargin=2*cm,
+            topMargin=2*cm,
+            bottomMargin=2*cm
+        )
+
         story = []
 
-        # 3) Título con Paragraph (para multiline si hace falta)
-        title_style = styles['Title']
-        title_style.fontSize = 18
-        title_style.leading = 22
+        # 3) Estilos para el texto general
+        #    a) Fecha y Firma (alineación derecha)
+        right_style = ParagraphStyle(
+            'RightStyle',
+            parent=styles['Normal'],
+            alignment=TA_RIGHT,
+            fontSize=10,
+            leading=12
+        )
+        #    b) Texto principal (justificado)
+        nota_style = ParagraphStyle(
+            'NotaStyle',
+            parent=styles['Normal'],
+            alignment=TA_JUSTIFY,
+            fontSize=10,
+            leading=12
+        )
 
-        title_paragraph = Paragraph("Comprobante de Números de Confianza", title_style)
-        story.append(title_paragraph)
+        # 4) Fecha alineada a la derecha
+        hoy = datetime.now().strftime("%d/%m/%Y")
+        fecha_paragraph = Paragraph(f"Resistencia, {hoy}", right_style)
+        story.append(fecha_paragraph)
         story.append(Spacer(1, 0.5*cm))
 
-        # 4) Construir data para la tabla. Primero la fila de headers
-        table_data = [headers]
-        table_data.extend(data_rows)
+        # 5) Texto principal justificado
+        texto_inicial = """
+        Por medio de la presente, declaro que los números de celular que figuran a continuación,
+        pertenecen a personas de mi entera confianza y autorizo a los mismos a operar
+        en el CHATBOT del InSSSeP, consultando todos los datos disponibles al momento
+        o los que decida el InSSSeP incorporar.<br/><br/>
+        Declaro, además, que ante cualquier cambio de los datos declarados,
+        informaré al InSSSeP a la brevedad.
+        """
+        texto_paragraph = Paragraph(texto_inicial, nota_style)
+        story.append(texto_paragraph)
+        story.append(Spacer(1, 0.5*cm))
 
-        # 5) Crear la tabla (cada celda es string)
-        # colWidths define anchos para que no se superpongan
-        tbl = Table(table_data, colWidths=[6*cm, 6*cm, 5*cm, 2*cm, 3*cm, 3*cm, 4*cm])
+        # 6) Firma a la derecha
+        firma_paragraph = Paragraph(
+            "<br/><br/>"  # ⬅ Agrega dos saltos de línea
+            "…………………………<br/>"
+            "<b>Apellido y Nombre</b><br/>"
+            "<b>CUIL</b>",
+            styles['Normal']
+        )
+        story.append(firma_paragraph)
 
-        # 6) Aplicar estilos
+        story.append(Spacer(1, 0.8*cm))
+
+        # 7) Construir la tabla
+        table_data = [headers] + data_rows
+        # Anchos totales ~16.5 cm para no recortar.
+        col_widths = [2.7*cm, 2.7*cm, 2.7*cm, 1.5*cm, 1.8*cm, 1.5*cm, 3.0*cm]
+
+        from reportlab.platypus import Table, TableStyle
+        tbl = Table(table_data, colWidths=col_widths, repeatRows=1)
+
+        # 8) Estilo de la tabla
         tbl_style = TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),   # Encabezado gris
+            ('WORDWRAP', (0, 0), (-1, -1), True),   # Habilitar word-wrap en celdas
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            # Encabezado
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, 0), 12),
-            ('FONTSIZE', (0, 1), (-1, -1), 10),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey)
+            ('FONTSIZE', (0, 0), (-1, 0), 8),
+            # Grid
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ])
         tbl.setStyle(tbl_style)
 
-        # 7) Agregar la tabla al story
         story.append(tbl)
-        story.append(Spacer(1, 1*cm))
 
-        # 8) Disclaimer
-        disclaimer_paragraph = Paragraph(
-            "Nota: Este comprobante es solo informativo. <br/>"
-            "Todos los derechos reservados. Will@INSSSEP 2025.",
-            styles['Normal']
-        )
-        story.append(disclaimer_paragraph)
-
-        # 9) Construir el PDF
+        # 9) Construir PDF
         doc.build(story)
 
         # 10) Abrir PDF
         abrir_pdf(pdf_path)
-        QMessageBox.information(self, "Comprobante", f"Se generó el PDF (landscape):\n{pdf_path}")
+        QMessageBox.information(self, "Comprobante", f"Se generó el comprobante:\n{pdf_path}")
+
+
+
 
 
     def centrar_ventana(self):
