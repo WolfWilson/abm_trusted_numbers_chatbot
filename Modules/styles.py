@@ -1,7 +1,8 @@
 STYLE_MAIN_WINDOW = """
     /* Fondo general de la ventana */
     QWidget {
-        background-color: #F6F6F6;
+        color: black;
+        background-color: transparent;
         font-family: Arial, sans-serif;
         font-size: 14px;
     }
@@ -28,11 +29,12 @@ STYLE_MAIN_WINDOW = """
      * Si quieres que TODOS los QLabel sean transparentes, 
      * usa "QLabel { background-color: transparent; }".
     */
-    QLabel#labelDni,
     QLabel#labelAgregar,
     QLabel#labelPrincipal,
     QLabel#labelNotificacion {
         background-color: transparent;
+        color: white;
+        font-weight: bold;
     }
     
     /* Campos de texto */

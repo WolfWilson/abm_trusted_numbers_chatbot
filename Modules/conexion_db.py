@@ -1,3 +1,4 @@
+
 import pyodbc
 
 def get_connection(server="SQL01", database="Gestion"):
@@ -28,7 +29,6 @@ def get_connection(server="SQL01", database="Gestion"):
             return conn
         except pyodbc.Error as e:
             print(f"❌ Error con {driver} en {server}\\{database}: {e}")
-
 
     raise Exception(f"⚠ No se pudo conectar a la base de datos {database} en {server} con ningún driver.")
 
