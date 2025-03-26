@@ -1,58 +1,42 @@
 STYLE_MAIN_WINDOW = """
-    /* Fondo general de la ventana */
     QWidget {
-        color: black;
+        color: #f7edf8;
         background-color: transparent;
         font-family: Arial, sans-serif;
         font-size: 14px;
+        
     }
 
-    /* "Ingrese DNI" en color negro */
     QLabel#labelDni {
         background-color: transparent;
-        color: black;  /* 🔹 Fuente en negro */
+        color: #000000;  /* Texto negro (visible en fondo claro) */
         font-weight: bold;
     }
 
-    /* "Agregar Nuevo Número", "Principal" y "Notificación" en color blanco */
     QLabel#labelAgregar,
     QLabel#labelPrincipal,
     QLabel#labelNotificacion {
         background-color: transparent;
-        color: white;  /* 🔹 Fuente en blanco */
-        font-weight: bold;  /* 🔹 Negrita */
-    }
-
-    /* 
-     * Labels transparentes para que no muestren fondo blanco, 
-     * útil cuando tienes imagen de fondo en la ventana. 
-     * Si quieres que TODOS los QLabel sean transparentes, 
-     * usa "QLabel { background-color: transparent; }".
-    */
-    QLabel#labelAgregar,
-    QLabel#labelPrincipal,
-    QLabel#labelNotificacion {
-        background-color: transparent;
-        color: white;
+        color: #FFFFFF;  /* Texto blanco para contraste */
         font-weight: bold;
     }
-    
-    /* Campos de texto */
+
     QLineEdit {
         border: 1px solid #AAAAAA;
         padding: 6px;
         border-radius: 4px;
         background-color: #FFFFFF;
+        color: #000000;  /* Texto oscuro en cajas de entrada */
     }
     QLineEdit:focus {
-        border: 1px solid #0078D7; /* Resalta el borde al hacer focus */
+        border: 1px solid #0078D7;
         background-color: #FAFAFA;
+        color: #000000;
     }
 
-    /* Botones normales */
     QPushButton {
         background-color: #0078D7;
-        color: white;
+        color: #FFFFFF;
         border-radius: 4px;
         padding: 6px 10px;
         font-weight: bold;
@@ -64,7 +48,6 @@ STYLE_MAIN_WINDOW = """
         background-color: #003E73;
     }
 
-    /* Botones tipo ToolButton (íconos de Editar, Eliminar, Agregar, etc.) */
     QToolButton {
         background-color: transparent;
         border: none;
@@ -75,12 +58,12 @@ STYLE_MAIN_WINDOW = """
         border-radius: 4px;
     }
 
-    /* ComboBox */
     QComboBox {
         border: 1px solid #AAAAAA;
         border-radius: 4px;
         padding: 4px;
         background-color: #FFFFFF;
+        color: #000000;
     }
     QComboBox:focus {
         border: 1px solid #0078D7;
@@ -92,24 +75,22 @@ STYLE_MAIN_WINDOW = """
         border-left: 0px solid darkgray;
     }
 
-    /* Tabla */
     QTableWidget {
         background-color: #FFFFFF;
+        color: #000000;
         gridline-color: #DDDDDD;
-        selection-background-color: #B5D5FF; /* Color al seleccionar una fila */
+        selection-background-color: #B5D5FF;
         selection-color: #000000;
     }
 
-    /* Encabezados de la tabla */
     QHeaderView::section {
         background-color: #EAEAEA;
+        color: #000000;
         padding: 4px;
         border: 1px solid #CCCCCC;
         font-weight: bold;
     }
 
-    /* ===== ScrollBars redondeados y modernos ===== */
-    /* ScrollBar vertical */
     QScrollBar:vertical {
         border: none;
         background-color: #E0E0E0;
@@ -132,7 +113,6 @@ STYLE_MAIN_WINDOW = """
         height: 0px;
     }
 
-    /* ScrollBar horizontal */
     QScrollBar:horizontal {
         border: none;
         background-color: #E0E0E0;
