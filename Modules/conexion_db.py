@@ -86,6 +86,7 @@ def verificar_permiso(grupo_nt):
     Verifica si el grupo tiene acceso según el SP Tiene_permiso.
     """
     query = "EXEC Tiene_permiso ?"
+    
     resultado = ejecutar_procedimiento("SQL01", "Gestion", query, (grupo_nt,))
     
     if isinstance(resultado, dict) and "error" in resultado:
